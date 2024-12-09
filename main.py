@@ -81,9 +81,9 @@ async def on_ready():
 
     # Only do this when necessary, discord will time you out for excessive syncing
 
-    guild = Object(id=487110352149020683)
-    synced = await client.tree.sync(guild=guild)
-    print(f"Commands synced: {len(synced)}")
+    # guild = Object(id=487110352149020683)
+    # synced = await client.tree.sync(guild=guild)
+    # print(f"Commands synced: {len(synced)}")
 
 
     print(f"{client.user} is now running. on foe nem\n")
@@ -105,7 +105,6 @@ async def on_message(message):
     print(f"[{channel}] {username}: {user_message}")
 
 
-
     if str(message.author.name) == "jrbaconcheeseburger":
         await message.channel.send("Chris has sent the following message:\n ")
         await message.channel.send(f"## {message.content} ")
@@ -118,10 +117,10 @@ async def on_message(message):
 
         await asyncio.sleep(10)
 
-        await my_poll.end()
-        msg = await client.wait_for("message_edit", check=lambda before, after: after.id == message.id and after.poll and after.poll.is_finalized())   
+        _, msg = await asyncio.gather(my_poll.end(), client.wait_for('message', check=lambda m: m.reference and m.reference.message_id and m.reference.message_id == my_poll.message.id and m.type.value == 46))
+        my_poll = (await my_poll.message.fetch()).poll
 
-        my_poll = msg.poll
+        print("got here")
 
         results = my_poll.answers
 
@@ -133,8 +132,6 @@ async def on_message(message):
                 yes_counts = result.vote_count
             else:
                 no_counts = result.vote_count
-        print(no_counts)
-        print(yes_counts)
         if yes_counts > no_counts:
             await message.channel.send("Deemed as provoking, reseting counter.")
     else:
