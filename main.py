@@ -1,5 +1,6 @@
 from typing import Final
 import os
+import textwrap
 from dotenv import load_dotenv
 from discord.ext import tasks, commands
 from discord import Intents, Client, Message, Poll, utils, Status, app_commands, Interaction, Object
@@ -15,13 +16,14 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 intents = Intents.default()
 intents.message_content = True
 intents.presences = True
+intents.members = True
 client = Client(intents=intents, application_id=1315206352712503357)
 
 client.tree = app_commands.CommandTree(client)
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
-days_since_last_argument = 13
+days_since_last_argument = 14
 
 @tasks.loop(hours=24)
 async def increment_counter():
@@ -35,13 +37,14 @@ async def send_daily_message():
 
     # hard coding the time for testing purposes
     current_time = datetime.now()
-    target_time = current_time.replace(hour=17, second=0, microsecond=0)
+    target_time = current_time.replace(hour=1, minute=0, second=0, microsecond=0)
 
     if current_time >= target_time:
         target_time += timedelta(hours=24)
 
-    time_until_target = (target_time - current_time).total_seconds()
 
+    time_until_target = (target_time - current_time).total_seconds()
+    print(time_until_target)
     await asyncio.sleep(time_until_target)
 
     channel = client.get_channel(487110352149020687)
@@ -78,12 +81,29 @@ async def gl(interaction: Interaction):
         else:
             await interaction.response.send_message("GL is not online.")
 
+@client.tree.command(name="setcounter", description="Manually set argument counter.")
+async def setcounter(interaction: Interaction, num: int):
+
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("Look at this fool trying to use an admin command when he aint even admin ROFL")
+        return
+
+    global days_since_last_argument
+    days_since_last_argument = num
+
+    await interaction.response.send_message(f"Counter set to `{num}`", ephemeral=True)
+
 
 @client.tree.command(name="provoke", description="Check if a user is provoking by letting the server review their recent messages.")
 async def provoke(interaction: Interaction, username: str):
     # Find user
     guild = interaction.guild
-    user = utils.find(lambda m: m.name == username, guild.members)
+    format_user = username.strip().lower()
+    user = utils.find(lambda m: m.name.lower() == format_user, guild.members)
+
+    for member in guild.members:
+        print(member.name)
+    
 
     if not user:
         await interaction.response.send_message(f"User '{username}' not found.")
@@ -91,7 +111,7 @@ async def provoke(interaction: Interaction, username: str):
 
     # get channel and last 100 messages
     channel = interaction.channel
-    messages = [msg async for msg in channel.history(limit=100)]
+    messages = [msg async for msg in channel.history(limit=200)]
 
     # filter
     provokers_messages = [msg for msg in messages if msg.author == user]
@@ -103,9 +123,17 @@ async def provoke(interaction: Interaction, username: str):
         return
 
     # combine messages into single 
-    message_content = "\n".join([f"[{msg.created_at.strftime('%I:%M %p')}]: {msg.content if msg.content else '**User sent a picture/gif.**'}" for msg in last_10_provoker_msg])
+    # message_content = "\n".join([f"\n[{msg.created_at.strftime('%I:%M %p')}]  {username}: {msg.content if msg.content else '*** User sent a picture. ***'}" for msg in reversed(last_10_provoker_msg)])
+    message_content = "\n".join([f"\n[{msg.created_at.strftime('%I:%M %p')}]  {username}: " + 
+        textwrap.fill(
+            msg.content if msg.content else '*** User sent a picture. ***', 
+            width=60, 
+            subsequent_indent=' ' * (len(f"[{msg.created_at.strftime('%I:%M %p')}]  {username}: "))) for msg in reversed(last_10_provoker_msg)])
 
-    await interaction.response.send_message(f"RECENT CHAT LOGS:\n\n{message_content}")
+    formatted_message = f"```\n{message_content}```"
+
+
+    await interaction.response.send_message(f"## Recent chat logs for {username}:\n\n{formatted_message}")
 
     jury = utils.find(lambda r: r.name == "Provoking Jury", guild.roles)
     if jury:
@@ -113,7 +141,7 @@ async def provoke(interaction: Interaction, username: str):
     else:
         jury = "Jury,"  
 
-    poll_message = await channel.send(content=f"{jury} please do your duty.")
+    poll_message = await channel.send(content=f"{jury}")
 
     my_poll = Poll("Was this person excessively provoking?", duration=timedelta(hours=1))
     my_poll.add_answer(text="Yes")
@@ -122,7 +150,7 @@ async def provoke(interaction: Interaction, username: str):
 
     await channel.send(content="", poll=my_poll)
 
-    await asyncio.sleep(20)
+    await asyncio.sleep(600)
 
     _, msg = await asyncio.gather(
         my_poll.end(), 
@@ -174,13 +202,16 @@ async def on_ready():
 
     # Only do this when necessary, discord will time you out for excessive syncing
 
-    guild = Object(id=487110352149020683)
-    client.tree.copy_global_to(guild=guild)
+    # guild = Object(id=487110352149020683)
+    # client.tree.copy_global_to(guild=guild)
     # synced = await client.tree.sync()
     # print(f"Commands synced: {len(synced)}")
 
     if not send_daily_message.is_running():
         send_daily_message.start()
+
+    if not increment_counter.is_running():
+        increment_counter.start()
 
     print(f"{client.user} is now running. on foe nem\n")
 
