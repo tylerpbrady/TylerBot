@@ -3,7 +3,7 @@ import os
 import textwrap
 from dotenv import load_dotenv
 from discord.ext import tasks, commands
-from discord import Intents, Client, Message, Poll, utils, Status, app_commands, Interaction, Object
+from discord import Intents, Client, Message, Poll, utils, Status, app_commands, Interaction, Object, VoiceChannel
 from responses import get_response
 from datetime import timedelta, datetime
 import asyncio
@@ -23,7 +23,7 @@ client.tree = app_commands.CommandTree(client)
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
-days_since_last_argument = 14
+days_since_last_argument = 16
 
 @tasks.loop(hours=24)
 async def increment_counter():
@@ -93,6 +93,40 @@ async def setcounter(interaction: Interaction, num: int):
 
     await interaction.response.send_message(f"Counter set to `{num}`", ephemeral=True)
 
+@client.tree.command(name="washingmachine", description="Moves someone around a bunch in hopes of getting their attention when deafened.")
+async def washingmachine(interaction: Interaction, member: str):
+    guild = interaction.guild
+    target_member = utils.find(lambda m: m.name == member, guild.members)
+
+    if not target_member:
+        await interaction.response.send_message("User not found", ephemeral=True)
+        return
+
+    if not target_member.voice or not target_member.voice.channel:
+        await interaction.response.send_message("Member not in voice channel", ephemeral=True)
+
+    original_channel = target_member.voice.channel
+
+    target_channel_1 = utils.find(lambda c: c.name == "1" and isinstance(c, VoiceChannel), guild.channels)
+    target_channel_2 = utils.find(lambda d: d.name == "2" and isinstance(d, VoiceChannel), guild.channels)
+
+    if not target_channel_1 or not target_channel_2:
+        await interaction.respond.send_message("Voice channels not found", ephemeral=True)
+        return
+
+    await interaction.response.send_message(f"**{target_member}** has been put in the washing machine.")
+    
+    try:
+        for i in range(5):
+            if i == 4:
+                await target_member.move_to(original_channel)
+            else:
+                await target_member.move_to(target_channel_1)
+                await asyncio.sleep(0.5)
+                await target_member.move_to(target_channel_2)
+
+    except Exception as e:
+        await interaction.respond.send_message("Failed to move member.", ephemeral=True)
 
 @client.tree.command(name="provoke", description="Check if a user is provoking by letting the server review their recent messages.")
 async def provoke(interaction: Interaction, username: str):
