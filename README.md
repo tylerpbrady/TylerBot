@@ -24,10 +24,4 @@ A custom-built Discord bot that improves Discord server moderation and engagemen
 ---
 
 ## 🛠 Setup & Installation
-
-### Requirements
-- Python 3.10+
-- `discord.py` (latest version)
-- `.env` file with:
-  ```env
-  DISCORD_TOKEN=your_token_here
+- Simply invite the bot to your server with [this link](https://discord.com/oauth2/authorize?client_id=1315206352712503357&permissions=562952117906448&integration_type=0&scope=bot+applications.commands)
