@@ -13,17 +13,14 @@ A custom-built Discord bot that improves Discord server moderation and engagemen
 
 ### Provoking Behavior Poll
 - `/provoke [username]` retrieves a user’s recent messages and formats them cleanly.
-- Automatically identifies if a message was a GIF/image.
 - Initiates a poll asking the server if the messages were “provoking.”
-- If a majority votes "Yes", the counter resets to zero.
+- If a majority votes "Yes", the "days since last argument" counter resets to zero.
 
 ### GL Status Checker
-- `/gl` checks if a specific user (e.g. "GL") is currently online.
+- `/gl` checks if the group leader is currently online.
 
-### Smart Text Responses
-- Responds to messages using custom logic in `responses.py`.
-- Filters out bot messages to prevent loops.
-
+### Washing Machine
+- `/washingmachine [username]` moves a user between 2 voice channels back and fourth repeatedly, putting them back in their original voice channel when done.
 ---
 
 ## 🛠 Setup & Installation
